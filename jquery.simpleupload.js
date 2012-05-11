@@ -4,12 +4,15 @@
 	    type: "post",
 	    processData: false,
 	    contentType: false,
-	    dataType: "json"
+	    dataType: "json",
+        fileKey: "file",
+        additionalFormData: {}
 	}
 
 	// simpleUpload function
-	var upload = functon(options) {
+	var upload = function(options) {
  		var alias;
+        var aliasSettings = jQuery.simpleUploadAliasSettings;
 
  		// if options parameter is a string matching an alias use the stored alias settings
 		for (alias in aliasSettings) {
@@ -23,46 +26,53 @@
 			throw "Options parameter is invalid";
 		}
 
-		// TODO: don't know if this is going to work with the 'this' object passed directly 
-		jQuery('body').on('change', this, { ajaxOptions: options } uploadHandler);
+		// bind handler to image field change event
+		this.on({
+            change: uploadHandler
+        }, {
+            ajaxOptions: options 
+        });
 	};
 
 	// attach upload handler to <body> element to allow delegated-events for dynamically added file upload fields
+    // TODO: add support for delegated events
 	var uploadHandler = function(event) {
 		var file = this.files[0];
 		var fd = new FormData();
-		var ajaxOptions = event.data.ajaxOptions;
+		var ajaxOptions = jQuery.extend(true, {}, defaultSettings, event.data.ajaxOptions);
 
-		fd.append('image', file);
+		fd.append(ajaxOptions.fileKey, file);
 		ajaxOptions.data = fd;
 
-		jQuery.ajax(jQuery.extend(true, {}, defaultSettings, ajaxOptions));
+        $.each(ajaxOptions.additionalFormData, function(k, v) {
+            fd.append(k, v);
+        });
+
+		jQuery.ajax(ajaxOptions);
 	};
 
 	// simpleUploadSetup function
 	// alias is the nickname the settings object should be stored under
 	var setup = function(alias, options) {
-
-		// settings organized by alias
-		this.aliasSettings = {
-			default: defaultSettings
-		}
-
 		if (options) {
 			// add new alias with associated options
-			this.aliasSettings[alias] = options;
+			jQuery.simpleUploadAliasSettings[alias] = options;
 		} else {
 			// change default settings for entire application
 			var options = alias;
-			jQuery.extend(this.defaultSettings.default, options);
+			jQuery.extend(jQuery.simpleUploadAliasSettings.defaults, options);
 		}
 	};
 
 	// Add to jQuery as plugins
-	jQuery.fn.extend({
-		simpleUploadSetup: setup,
-		simpleUpload: upload
-	});
+	jQuery.fn.simpleUpload = upload;
+
+    jQuery.extend({
+        simpleUploadAliasSettings: {
+            defaults: defaultSettings
+        },
+        simpleUploadSetup: setup
+    });
 })(jQuery);
 
 /* 

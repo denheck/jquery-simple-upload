@@ -10,27 +10,26 @@
 	}
 
 	// simpleUpload function
-	var upload = function(options) {
- 		var alias;
+	var upload = function(alias, options) {
+ 		var aliasOptions = {};
+        var additionalOptions = {};
         var aliasSettings = jQuery.simpleUploadAliasSettings;
 
- 		// if options parameter is a string matching an alias use the stored alias settings
-		for (alias in aliasSettings) {
-			if (alias === options) {
-				options = aliasSettings[alias];
-			}
-		}
+        if (alias && aliasSettings[alias]) {
+            aliasOptions = aliasSettings[alias];
+        } else if (alias) {
+            aliasOptions = alias;
+        }
 
-		// handle options parameter being invalid
-		if (jQuery.isPlainObject(options) === false) {
-			throw "Options parameter is invalid";
-		}
+        if (options) {
+            additionalOptions = options;
+        }
 
 		// bind handler to image field change event
 		this.on({
             change: uploadHandler
         }, {
-            ajaxOptions: options 
+            ajaxOptions: jQuery.extend(true, {}, aliasOptions, additionalOptions)
         });
 	};
 

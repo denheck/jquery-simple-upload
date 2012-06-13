@@ -1,5 +1,5 @@
 (function(jQuery) {
-	// default settings to be used for all image upload attempts
+	// default settings to be used for all file upload attempts
 	var defaultSettings = {
 	    type: "post",
 	    processData: false,
@@ -25,30 +25,72 @@
             additionalOptions = options;
         }
 
-		// bind handler to image field change event
-		this.on({
-            change: uploadHandler
-        }, {
-            ajaxOptions: jQuery.extend(true, {}, aliasOptions, additionalOptions)
-        });
+        var ajaxOptions = jQuery.extend(true, {}, aliasOptions, additionalOptions);
+
+		// bind handler to file field change event
+		this.on('change', {
+            ajaxOptions: ajaxOptions
+        }, uploadHandler);
+
+        // add drop wrapper around file input
+        this.wrap(
+            $('<div></div>', {
+                class: "simpleUploadDropWrapper"
+            })
+
+            .on('dragenter', function(event) {
+                event.preventDefault();
+                return true;
+            })
+
+            .on('dragover', function() {
+                return false;
+            })
+
+            .on('drop', {
+                ajaxOptions: ajaxOptions
+            }, uploadHandler)
+        );
 	};
 
 	// attach upload handler to <body> element to allow delegated-events for dynamically added file upload fields
     // TODO: add support for delegated events
 	var uploadHandler = function(event) {
-		var file = this.files[0];
-		var fd = new FormData();
-		var ajaxOptions = jQuery.extend(true, {}, defaultSettings, event.data.ajaxOptions);
+        var externalFileSource = getExternalFileSource(event);
+        var ajaxOptions = jQuery.extend(true, {}, defaultSettings, event.data.ajaxOptions);
+        var fd = new FormData();
 
-		fd.append(ajaxOptions.fileKey, file);
-		ajaxOptions.data = fd;
+        if (externalFileSource) {
+            ajaxOptions.additionalFormData.externalFileSource = externalFileSource;
+        } else {
+            var file = this.files[0];
+
+            fd.append(ajaxOptions.fileKey, file);
+        }
 
         $.each(ajaxOptions.additionalFormData, function(k, v) {
             fd.append(k, v);
         });
 
+        ajaxOptions.data = fd;
+
 		jQuery.ajax(ajaxOptions);
 	};
+
+    // get files from external sources if available
+    var getExternalFileSource = function(event) {
+        var externalFileSource = null;
+
+        try {
+            var source = event.originalEvent.dataTransfer.getData('text/uri-list');
+
+            if (source.substr(0,4) !== 'file') {
+                externalFileSource = source;
+            }
+        } catch (e) { }
+
+        return externalFileSource;
+    };
 
 	// simpleUploadSetup function
 	// alias is the nickname the settings object should be stored under
@@ -78,8 +120,10 @@
 
 Cool Stuff
 
-* Handles dynamically created file upload boxes
+* Handles dynamically created file upload boxes (NOT YET)
 * Uploads using HTML 5 via AJAX
 * Use aliased settings to upload files to different locations or with different parameters
+* Can add a config file with all file upload settings defined in one place using $.simpleUploadSetup
+* Can drag and drop files from desktop and from web browser (TODO additional security filtering recommended)
 
 */

@@ -9,8 +9,10 @@
         additionalFormData: {}
 	}
 
-    // add callbacks to jqXHR object
-    var addCallbacks = function(jqXHR) {
+    // make ajax request
+    var makeRequest = function(ajaxOptions) {
+        var jqXHR = jQuery.ajax(ajaxOptions);
+
         jqXHR.always(function() {
             $(this.element).val('');
         });
@@ -66,22 +68,26 @@
         var externalFileSource = getExternalFileSource(event);
         var ajaxOptions = jQuery.extend(true, {}, defaultSettings, event.data.ajaxOptions);
         ajaxOptions.element = this;
-        var fd = new FormData();
+        ajaxOptions.data = new FormData();
 
         if (externalFileSource) {
             ajaxOptions.additionalFormData.externalFileSource = externalFileSource;
-        } else {
-            var file = this.files[0];
-
-            fd.append(ajaxOptions.fileKey, file);
         }
 
         $.each(ajaxOptions.additionalFormData, function(k, v) {
-            fd.append(k, v);
+            ajaxOptions.data.append(k, v);
         });
 
-        ajaxOptions.data = fd;
-        addCallbacks(jQuery.ajax(ajaxOptions));
+        if (this.files) {
+            for (var i = 0; i < this.files.length; i++) {
+                ajaxOptions.data.append(ajaxOptions.fileKey, this.files[i]);
+                makeRequest(ajaxOptions);
+            }
+        } else {
+            makeRequest(ajaxOptions);
+        }
+
+        return false;
 	};
 
     // get files from external sources if available

@@ -9,6 +9,13 @@
         additionalFormData: {}
 	}
 
+    // add callbacks to jqXHR object
+    var addCallbacks = function(jqXHR) {
+        jqXHR.always(function() {
+            $(this.element).val('');
+        });
+    }
+
 	// simpleUpload function
 	var upload = function(alias, options) {
  		var aliasOptions = {};
@@ -58,6 +65,7 @@
 	var uploadHandler = function(event) {
         var externalFileSource = getExternalFileSource(event);
         var ajaxOptions = jQuery.extend(true, {}, defaultSettings, event.data.ajaxOptions);
+        ajaxOptions.element = this;
         var fd = new FormData();
 
         if (externalFileSource) {
@@ -73,8 +81,7 @@
         });
 
         ajaxOptions.data = fd;
-
-		jQuery.ajax(ajaxOptions);
+        addCallbacks(jQuery.ajax(ajaxOptions));
 	};
 
     // get files from external sources if available

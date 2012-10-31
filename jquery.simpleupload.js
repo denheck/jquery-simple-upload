@@ -6,11 +6,24 @@
 	    contentType: false,
 	    dataType: "json",
         fileKey: "file",
-        additionalFormData: {}
+        additionalFormData: {},
+        preRequestCallback: function(file) {}
 	}
 
+    // callback before request (map returned is appended to FormData)
+    var preRequestCallback = function(ajaxOptions, file) {
+        var data = ajaxOptions.preRequestCallback(file);
+        return $.isPlainObject(data) ? data : {};
+    }
+
     // make ajax request
-    var makeRequest = function(ajaxOptions) {
+    var makeRequest = function(ajaxOptions, file) {
+        var additionalFormData = preRequestCallback(ajaxOptions, file);
+
+        $.each(additionalFormData, function(k, v) {
+            ajaxOptions.data.append(k, v);
+        });
+
         var jqXHR = jQuery.ajax(ajaxOptions);
 
         jqXHR.always(function() {
@@ -81,10 +94,10 @@
         if (this.files) {
             for (var i = 0; i < this.files.length; i++) {
                 ajaxOptions.data.append(ajaxOptions.fileKey, this.files[i]);
-                makeRequest(ajaxOptions);
+                makeRequest(ajaxOptions, this.files[i]);
             }
         } else {
-            makeRequest(ajaxOptions);
+            makeRequest(ajaxOptions, externalFileSource);
         }
 
         return false;
